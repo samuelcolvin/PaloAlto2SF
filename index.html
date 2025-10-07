@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <title>Caltrain Schedule</title>
+    <link rel="manifest" href="manifest.json" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        background: #1e1e2e;
+        color: #fff;
+        min-height: 100vh;
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        width: 100%;
+      }
+      .route {
+        margin-bottom: 3rem;
+        padding: 2rem;
+        text-align: center;
+      }
+      .route-name {
+        font-size: 1.5rem;
+        color: #888;
+        margin-bottom: 1rem;
+        font-weight: 500;
+      }
+      .train-time {
+        font-size: 4rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        line-height: 1;
+      }
+      .minutes {
+        font-size: 2rem;
+        color: #888;
+        margin-bottom: 0.75rem;
+      }
+      .train-info {
+        font-size: 1.2rem;
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+      }
+      .train-type {
+        padding: 0.25rem 0.75rem;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+      }
+      .train-type.express {
+        background: #1e40af;
+        color: #fff;
+      }
+      .train-type.limited {
+        background: #7c3aed;
+        color: #fff;
+      }
+      .train-type.local {
+        background: #334155;
+        color: #cbd5e1;
+      }
+      .status {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        padding: 0.5rem 1rem;
+        background: #111;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        border: 1px solid #222;
+      }
+      .online {
+        color: #4caf50;
+      }
+      .offline {
+        color: #ff9800;
+      }
+      .error {
+        color: #f44336;
+        font-size: 1.2rem;
+        text-align: center;
+        padding: 2rem;
+      }
+      .loading {
+        text-align: center;
+        font-size: 1.5rem;
+        color: #888;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="status" id="status">
+      <span id="connection-status"></span>
+    </div>
+
+    <div class="container" id="app">
+      <div class="loading">Loading schedule...</div>
+    </div>
+
+    <script>
+      // Register service worker
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js")
+            .then((reg) => console.log("Service Worker registered:", reg))
+            .catch((err) =>
+              console.log("Service Worker registration failed:", err),
+            );
+        });
+      }
+
+      let schedule = null;
+
+      // Fetch train schedule
+      async function loadSchedule() {
+        try {
+          const response = await fetch("/schedule.json");
+          schedule = await response.json();
+          updateDisplay();
+          // Update every minute
+          setInterval(updateDisplay, 60000);
+        } catch (error) {
+          document.getElementById("app").innerHTML =
+            '<div class="error">Error loading schedule. Please check that schedule.json exists.</div>';
+          console.error("Error loading schedule:", error);
+        }
+      }
+
+      // Get next train and minutes until departure
+      function getNextTrain(trains) {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+        // Find next train
+        for (let train of trains) {
+          const [hours, minutes] = train.time.split(":").map(Number);
+          const trainMinutes = hours * 60 + minutes;
+
+          if (trainMinutes > currentMinutes) {
+            const minutesUntil = trainMinutes - currentMinutes;
+            return {
+              time: train.time,
+              minutes: minutesUntil,
+              trainNumber: train.train,
+              trainType: train.type,
+            };
+          }
+        }
+
+        // No more trains today, show first train tomorrow
+        const firstTrain = trains[0];
+        const [hours, minutes] = firstTrain.time.split(":").map(Number);
+        const firstTrainMinutes = hours * 60 + minutes;
+        const minutesUntil = 24 * 60 - currentMinutes + firstTrainMinutes;
+        return {
+          time: firstTrain.time,
+          minutes: minutesUntil,
+          tomorrow: true,
+          trainNumber: firstTrain.train,
+          trainType: firstTrain.type,
+        };
+      }
+
+      // Update the display
+      function updateDisplay() {
+        if (!schedule) return;
+
+        const paToSf = getNextTrain(schedule.paloAltoToSF);
+        const sfToPa = getNextTrain(schedule.sfToPaloAlto);
+
+        const html = `
+                <div class="route">
+                    <div class="route-name">Palo Alto → SF</div>
+                    <div class="train-time">${paToSf.time}</div>
+                    <div class="minutes">in ${paToSf.minutes} minutes${paToSf.tomorrow ? " (tomorrow)" : ""}</div>
+                    <div class="train-info">
+                        <span class="train-type ${paToSf.trainType.toLowerCase()}">${paToSf.trainType}</span>
+                    </div>
+                </div>
+                <div class="route">
+                    <div class="route-name">SF → Palo Alto</div>
+                    <div class="train-time">${sfToPa.time}</div>
+                    <div class="minutes">in ${sfToPa.minutes} minutes${sfToPa.tomorrow ? " (tomorrow)" : ""}</div>
+                    <div class="train-info">
+                        <span class="train-type ${sfToPa.trainType.toLowerCase()}">${sfToPa.trainType}</span>
+                    </div>
+                </div>
+            `;
+
+        document.getElementById("app").innerHTML = html;
+      }
+
+      // Display online/offline status
+      function updateStatus() {
+        const statusEl = document.getElementById("connection-status");
+        if (navigator.onLine) {
+          statusEl.innerHTML = '<span class="online">● Online</span>';
+        } else {
+          statusEl.innerHTML = '<span class="offline">● Offline</span>';
+        }
+      }
+
+      updateStatus();
+      window.addEventListener("online", updateStatus);
+      window.addEventListener("offline", updateStatus);
+
+      // Load schedule on page load
+      loadSchedule();
+    </script>
+  </body>
+</html>
