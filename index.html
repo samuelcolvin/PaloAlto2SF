@@ -17,8 +17,8 @@
           -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
         background: #1e1e2e;
         color: #fff;
-        min-height: 100vh;
-        padding: 2rem;
+        height: 100vh;
+        padding: 0;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -28,8 +28,10 @@
         margin: 0 auto;
         width: 100%;
       }
+      .route:first-child {
+        margin-bottom: 2.5rem;
+      }
       .route {
-        margin-bottom: 3rem;
         padding: 2rem;
         text-align: center;
       }
@@ -108,10 +110,6 @@
     </style>
   </head>
   <body>
-    <div class="status" id="status">
-      <span id="connection-status"></span>
-    </div>
-
     <div class="container" id="app">
       <div class="loading">Loading schedule...</div>
     </div>
@@ -202,20 +200,6 @@
                 </div>
             `;
       }
-
-      // Display online/offline status
-      function updateStatus() {
-        const statusEl = document.getElementById("connection-status");
-        if (navigator.onLine) {
-          statusEl.innerHTML = '<span class="online">● Online</span>';
-        } else {
-          statusEl.innerHTML = '<span class="offline">● Offline</span>';
-        }
-      }
-
-      updateStatus();
-      window.addEventListener("online", updateStatus);
-      window.addEventListener("offline", updateStatus);
 
       // Load schedule on page load
       loadSchedule();
