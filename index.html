@@ -50,6 +50,10 @@
         color: #888;
         margin-bottom: 0.75rem;
       }
+      .train-number {
+        color: #888;
+        padding-top: 0.5rem;
+      }
       .train-info {
         font-size: 1.2rem;
         display: flex;
@@ -114,16 +118,9 @@
 
     <script>
       // Register service worker
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker
-            .register("/sw.js")
-            .then((reg) => console.log("Service Worker registered:", reg))
-            .catch((err) =>
-              console.log("Service Worker registration failed:", err),
-            );
-        });
-      }
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js");
+      });
 
       let schedule = null;
 
@@ -133,8 +130,8 @@
           const response = await fetch("/schedule.json");
           schedule = await response.json();
           updateDisplay();
-          // Update every minute
-          setInterval(updateDisplay, 60000);
+          // Update every 5 seconds
+          setInterval(updateDisplay, 5000);
         } catch (error) {
           document.getElementById("app").innerHTML =
             '<div class="error">Error loading schedule. Please check that schedule.json exists.</div>';
@@ -184,7 +181,7 @@
         const paToSf = getNextTrain(schedule.paloAltoToSF);
         const sfToPa = getNextTrain(schedule.sfToPaloAlto);
 
-        const html = `
+        document.getElementById("app").innerHTML = `
                 <div class="route">
                     <div class="route-name">Palo Alto → SF</div>
                     <div class="train-time">${paToSf.time}</div>
@@ -192,6 +189,7 @@
                     <div class="train-info">
                         <span class="train-type ${paToSf.trainType.toLowerCase()}">${paToSf.trainType}</span>
                     </div>
+                    <div class="train-number">Train ${paToSf.trainNumber}</div>
                 </div>
                 <div class="route">
                     <div class="route-name">SF → Palo Alto</div>
@@ -200,10 +198,9 @@
                     <div class="train-info">
                         <span class="train-type ${sfToPa.trainType.toLowerCase()}">${sfToPa.trainType}</span>
                     </div>
+                    <div class="train-number">Train ${sfToPa.trainNumber}</div>
                 </div>
             `;
-
-        document.getElementById("app").innerHTML = html;
       }
 
       // Display online/offline status
