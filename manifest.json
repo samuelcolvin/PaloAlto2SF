@@ -4,8 +4,8 @@
   "description": "Next train times between Palo Alto and SF",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#1e1e2e",
+  "theme_color": "#1e1e2e",
   "icons": [
     {
       "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🚆</text></svg>",

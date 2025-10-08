@@ -1,4 +1,4 @@
-const CACHE_NAME = 'caltrain-schedule-v1';
+const CACHE_NAME = 'caltrain-schedule-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -26,7 +26,7 @@ self.addEventListener('fetch', event => {
         if (response) {
           return response;
         }
-        
+
         // Not in cache - fetch from network
         return fetch(event.request).then(networkResponse => {
           // If it's a valid response, cache it
@@ -48,10 +48,10 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.map(cacheName => {
+        cacheNames.forEach(cacheName => {
           if (cacheName !== CACHE_NAME) {
             console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
+            caches.delete(cacheName);
           }
         })
       );
